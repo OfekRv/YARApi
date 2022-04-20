@@ -2,8 +2,19 @@ import os
 import json
 import time
 import yara
+import requests
+import logging
 from flask import Flask, request, jsonify
 app = Flask(__name__)
+
+PORT =  os.environ.get('PORT', 5000)
+STORE_API_URL = os.environ.get('STORE_API_URL', 'http://localhost:9000')
+STORE_API_USERNAME = os.environ.get('STORE_API_USERNAME', '*')
+STORE_API_PASSWORD = os.environ.get('STORE_API_PASSWORD', '*')
+STORE_API_YARA_ENGINE_NAME = os.environ.get('STORE_API_YARA_ENGINE_NAME', 'YARA')
+
+YARA_EXTENSION = ".yar"
+NEW_LINE = '\"\n'
 
 #TODO: fix path-traversal
 #TODO: make thread safe (?)
@@ -33,14 +44,13 @@ def get_rule(name):
 @app.route('/rules/<name>', methods=['POST'])
 def save_rule(name):
     rule = request.json['content']
-    with open(name + '.yar', 'w') as rule_file:
-        rule_file.write(rule)
+    save_rule_file(name, rule)
     generate_index_rule()
     return name
 
 @app.route('/rules/<name>', methods=['DELETE'])
 def delete_rule(name):
-    os.remove(name + '.yar')
+    os.remove(name + YARA_EXTENSION)
     generate_index_rule()
     return name
 
@@ -50,11 +60,28 @@ def generate_index_rule():
     
     with open('index', 'w') as rules:
         for rule_file in os.scandir(os.curdir):
-            if rule_file.path.endswith('.yar'):
-                rules.write('include \"' + rule_file.name + '\"\n')
+            if rule_file.path.endswith(YARA_EXTENSION):
+                rules.write('include \"' + rule_file.name + NEW_LINE)
 
     yara.compile(filepath='index', includes=True).save('compiled_index')
 
+def init_rules():
+    rules = requests.get(STORE_API_URL + "/api/rules?page=0&size=1000&eagerload=false",
+                        auth=(STORE_API_USERNAME, STORE_API_PASSWORD)).json()
+    for rule in rules:
+        if rule['engine']['name'] == STORE_API_YARA_ENGINE_NAME: 
+            save_rule_file(rule['name'], rule['raw'])
+    generate_index_rule()
+
+def save_rule_file(name, content):
+    with open(name + YARA_EXTENSION, 'w') as rule_file:
+        rule_file.write(content)
+
 if __name__ == '__main__':
-    # TODO - no hardcoded
-    app.run(threaded=True, port=5000)
+    try:
+        init_rules()
+    except:
+        logging.warning('Could not init rules') 
+
+    # TODO - no hardcoded port
+    app.run(threaded=False, port=PORT)
