@@ -14,10 +14,8 @@ STORE_API_PASSWORD = os.environ.get('STORE_API_PASSWORD', '*')
 STORE_API_YARA_ENGINE_NAME = os.environ.get('STORE_API_YARA_ENGINE_NAME', 'YARA')
 
 YARA_EXTENSION = ".yar"
-NEW_LINE = '\"\n'
 
 #TODO: fix path-traversal
-#TODO: make thread safe (?)
 
 @app.route('/scan', methods=['POST'])
 def get_matches():
@@ -61,7 +59,7 @@ def generate_index_rule():
     with open('index', 'w') as rules:
         for rule_file in os.scandir(os.curdir):
             if rule_file.path.endswith(YARA_EXTENSION):
-                rules.write('include \"' + rule_file.name + NEW_LINE)
+                rules.write('include \"' + rule_file.name + '\"\n')
 
     yara.compile(filepath='index', includes=True).save('compiled_index')
 
