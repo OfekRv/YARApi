@@ -9,8 +9,8 @@ app = Flask(__name__)
 
 PORT =  os.environ.get('PORT', 5000)
 STORE_API_URL = os.environ.get('STORE_API_URL', 'http://localhost:9000')
-STORE_API_USERNAME = os.environ.get('STORE_API_USERNAME', '*')
-STORE_API_PASSWORD = os.environ.get('STORE_API_PASSWORD', '*')
+STORE_API_USERNAME = os.environ.get('STORE_API_USERNAME', '**')
+STORE_API_PASSWORD = os.environ.get('STORE_API_PASSWORD', '**')
 STORE_API_YARA_ENGINE_NAME = os.environ.get('STORE_API_YARA_ENGINE_NAME', 'YARA')
 
 YARA_EXTENSION = ".yar"
