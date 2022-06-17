@@ -20,6 +20,9 @@ YARA_EXTENSION = ".yar"
 
 @app.route('/scan', methods=['POST'])
 def get_matches():
+    if not os.path.exists('compiled_index'):
+        init_rules()
+
     rules = yara.load('compiled_index')
     text = request.json['content']
 
