@@ -8,9 +8,9 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 PORT =  os.environ.get('PORT', 5000)
-STORE_API_URL = os.environ.get('STORE_API_URL', 'http://localhost:9000')
-STORE_API_USERNAME = os.environ.get('STORE_API_USERNAME', '**')
-STORE_API_PASSWORD = os.environ.get('STORE_API_PASSWORD', '**')
+STORE_API_URL = os.environ.get('STORE_API_URL', 'http://snipptor.herokuapp.com')
+STORE_API_USERNAME = os.environ.get('STORE_API_USERNAME', 'admin')
+STORE_API_PASSWORD = os.environ.get('STORE_API_PASSWORD', 'w9dRxWLGH3PMfdk')
 STORE_API_YARA_ENGINE_NAME = os.environ.get('STORE_API_YARA_ENGINE_NAME', 'YARA')
 
 YARA_EXTENSION = ".yar"
@@ -53,6 +53,7 @@ def delete_rule(name):
     return name
 
 def generate_index_rule():
+    logging.info('generating index rule')
     if os.path.exists('index'):
         os.remove('index')   
     
@@ -62,14 +63,17 @@ def generate_index_rule():
                 rules.write('include \"' + rule_file.name + '\"\n')
 
     yara.compile(filepath='index', includes=True).save('compiled_index')
+    logging.info('index rule compiled')
 
 def init_rules():
+    logging.info('initing rules')
     rules = requests.get(STORE_API_URL + "/api/rules?page=0&size=1000&eagerload=false",
                         auth=(STORE_API_USERNAME, STORE_API_PASSWORD)).json()
     for rule in rules:
         if rule['engine']['name'] == STORE_API_YARA_ENGINE_NAME: 
             save_rule_file(rule['name'], rule['raw'])
     generate_index_rule()
+    logging.info('rules initialized')
 
 def save_rule_file(name, content):
     with open(name + YARA_EXTENSION, 'w') as rule_file:
