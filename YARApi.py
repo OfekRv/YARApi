@@ -8,10 +8,11 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 PORT =  os.environ.get('PORT', 5000)
-STORE_API_URL = os.environ.get('STORE_API_URL', 'http://snipptor.herokuapp.com')
-STORE_API_USERNAME = os.environ.get('STORE_API_USERNAME', 'admin')
-STORE_API_PASSWORD = os.environ.get('STORE_API_PASSWORD', 'w9dRxWLGH3PMfdk')
+STORE_API_URL = os.environ.get('STORE_API_URL', '**')
+STORE_API_USERNAME = os.environ.get('STORE_API_USERNAME', '**')
+STORE_API_PASSWORD = os.environ.get('STORE_API_PASSWORD', '**')
 STORE_API_YARA_ENGINE_NAME = os.environ.get('STORE_API_YARA_ENGINE_NAME', 'YARA')
+STORE_API_RETRY_INTERVAL = os.environ.get('STORE_API_RETRY_INTERVAL', 60)
 
 YARA_EXTENSION = ".yar"
 
@@ -80,10 +81,15 @@ def save_rule_file(name, content):
         rule_file.write(content)
 
 if __name__ == '__main__':
-    try:
-        init_rules()
-    except:
-        logging.warning('Could not init rules') 
+    inited = False
+    while not inited:
+        try:
+            init_rules()
+            inited = True
+        except:
+            logging.warning('Could not init rules') 
+            time.sleep(STORE_API_RETRY_INTERVAL)
+            logging.warning('Trying init rules again') 
 
     # TODO - no hardcoded port
     app.run(threaded=False, port=PORT)
