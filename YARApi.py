@@ -1,3 +1,4 @@
+from asyncio.windows_events import NULL
 import os
 import json
 import time
@@ -8,9 +9,6 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 PORT =  os.environ.get('PORT', 5000)
-STORE_API_URL = os.environ.get('STORE_API_URL', '**')
-STORE_API_USERNAME = os.environ.get('STORE_API_USERNAME', '**')
-STORE_API_PASSWORD = os.environ.get('STORE_API_PASSWORD', '**')
 STORE_API_YARA_ENGINE_NAME = os.environ.get('STORE_API_YARA_ENGINE_NAME', 'YARA')
 STORE_API_RETRY_INTERVAL = os.environ.get('STORE_API_RETRY_INTERVAL', 60)
 
@@ -18,8 +16,9 @@ YARA_EXTENSION = ".yar"
 
 #TODO: fix path-traversal
 
+#TODO: deprected
 @app.route('/scan', methods=['POST'])
-def get_matches():
+def scan():
     if not os.path.exists('compiled_index'):
         init_rules()
 
@@ -38,21 +37,34 @@ def get_matches():
         rules_matched.append(match.rule)
     return {'matches': rules_matched}
 
-@app.route('/rules/<name>', methods=['GET'])
-def get_rule(name):
-    with open(name + '.yar', 'r') as rule_file:
-        return rule_file.read()
+@app.route('/scan', methods=['POST'])
+def scan_request():
+    #TODO: verify request first
+
+    #TODO: should return: 202, request id
+    return {'result': '/result/request_id/status'}
+
+# consider the URI
+@app.route('/result/<request_id>/status', methods=['GET'])
+def request_status():
+    # TODO: if no resposne - 200, else - 302 + resource redirect (?)
+    if request:
+        # TODO: status code 302
+        return {'result': '/result/request_id','status': 'Completed'}
+    
+    # TODO: status code 200
+    return {'status': 'Pending'}
+
+# consider the URI
+@app.route('/result/<request_id>', methods=['GET'])
+def request_result():
+    # TODO: if no resposne - 200, else - 302 + resource redirect (?)
+    return {'matches': 'STUB'}
 
 @app.route('/rules/<name>', methods=['POST'])
 def save_rule(name):
     rule = request.json['content']
     save_rule_file(name, rule)
-    generate_index_rule()
-    return name
-
-@app.route('/rules/<name>', methods=['DELETE'])
-def delete_rule(name):
-    os.remove(name + YARA_EXTENSION)
     generate_index_rule()
     return name
 
@@ -71,11 +83,12 @@ def generate_index_rule():
 
 def init_rules():
     logging.info('initing rules')
-    rules = requests.get(STORE_API_URL + "/api/rules?page=0&size=1000&eagerload=false",
-                        auth=(STORE_API_USERNAME, STORE_API_PASSWORD)).json()
+    # TODO: rules source from github url (?)
+    rules = []
+    #rules = requests.get(STORE_API_URL + "/api/rules?page=0&size=1000&eagerload=false",
+    #                    auth=(STORE_API_USERNAME, STORE_API_PASSWORD)).json()
     for rule in rules:
-        if rule['engine']['name'] == STORE_API_YARA_ENGINE_NAME: 
-            save_rule_file(rule['name'], rule['raw'])
+        save_rule_file(rule['name'], rule['raw'])
     generate_index_rule()
     logging.info('rules initialized')
 
@@ -84,15 +97,4 @@ def save_rule_file(name, content):
         rule_file.write(content)
 
 if __name__ == '__main__':
-    inited = False
-    while not inited:
-        try:
-            init_rules()
-            inited = True
-        except:
-            logging.warning('Could not init rules') 
-            time.sleep(STORE_API_RETRY_INTERVAL)
-            logging.warning('Trying init rules again') 
-
-    # TODO - no hardcoded port
     app.run(threaded=False, port=PORT)

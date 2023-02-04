@@ -1,5 +1,6 @@
 /.vs
 /venv
+/env
 /.vs/YARApi/v16/.suo
 *.yar
 index
