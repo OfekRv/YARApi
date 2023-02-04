@@ -1,72 +1,64 @@
-from asyncio.windows_events import NULL
+from concurrent.futures import thread
 import os
-import json
-import time
+import uuid
+from wsgiref.util import request_uri
 import yara
-import requests
+import time
+import threading
 import logging
 from flask import Flask, request, jsonify
+
 app = Flask(__name__)
 
-PORT =  os.environ.get('PORT', 5000)
-STORE_API_YARA_ENGINE_NAME = os.environ.get('STORE_API_YARA_ENGINE_NAME', 'YARA')
-STORE_API_RETRY_INTERVAL = os.environ.get('STORE_API_RETRY_INTERVAL', 60)
-
+PORT = os.environ.get('PORT', 5000)
 YARA_EXTENSION = ".yar"
 
-#TODO: fix path-traversal
-
-#TODO: deprected
-@app.route('/scan', methods=['POST'])
-def scan():
-    if not os.path.exists('compiled_index'):
-        init_rules()
-
-    rules = yara.load('compiled_index')
-    text = request.json['content']
-
-    sample_file_name = str(time.time_ns())
-    with open(sample_file_name, 'w') as sample:
-        sample.write(text)
-    
-    matches = rules.match(sample_file_name)
-    os.remove(sample_file_name)
-    print(matches)
-    rules_matched = []
-    for match in matches:
-        rules_matched.append(match.rule)
-    return {'matches': rules_matched}
+scan_requests = {}
+scan_results = {}
 
 @app.route('/scan', methods=['POST'])
 def scan_request():
-    #TODO: verify request first
+    #TODO: verify request
+    request_uid = uuid.uuid1().hex
+    scan_requests.update({request_uid: {'status': 'Pending'}})
+    #asyncio.ensure_future(todo(request_uid))
+    threading.Thread(target=todo, args=([request_uid])).start()
+    return {'location': '/requests/' + request_uid + '/status'}, 202
 
-    #TODO: should return: 202, request id
-    return {'result': '/result/request_id/status'}
+@app.route('/requests/<request_id>/status', methods=['GET'])
+def request_status(request_id):
+    #TODO check if exist
+    resource = scan_requests[request_id]
+    status_code = 302 if resource['status'] == 'Completed' else 200
+    return resource, status_code
 
-# consider the URI
-@app.route('/result/<request_id>/status', methods=['GET'])
-def request_status():
-    # TODO: if no resposne - 200, else - 302 + resource redirect (?)
-    if request:
-        # TODO: status code 302
-        return {'result': '/result/request_id','status': 'Completed'}
+@app.route('/results/<result_id>', methods=['GET'])
+def scan_result(result_id):
+    #TODO check if exist
+    resource = scan_results[result_id];
+    status_code = 200 if resource else 404
+    return resource, status_code
+
+def todo(request_id):
+    time.sleep(5)
+    scan_request = scan_requests[request_id]
+    result_uid = uuid.uuid1().hex
+    scan_results.update({result_uid: 'TODO'})
+    scan_request['status'] = 'Completed'
+    scan_request['result'] = '/results/' + result_uid
+    scan_requests.update({request_id: scan_request})
+
+def init_rules():
+    logging.info('initing rules')
     
-    # TODO: status code 200
-    return {'status': 'Pending'}
+    # TODO: rules source from github url (?)
+    rules = []
 
-# consider the URI
-@app.route('/result/<request_id>', methods=['GET'])
-def request_result():
-    # TODO: if no resposne - 200, else - 302 + resource redirect (?)
-    return {'matches': 'STUB'}
-
-@app.route('/rules/<name>', methods=['POST'])
-def save_rule(name):
-    rule = request.json['content']
-    save_rule_file(name, rule)
+    for rule in rules:
+        save_rule_file(rule['name'], rule['raw'])
     generate_index_rule()
-    return name
+    
+    logging.info('rules initialized')
 
 def generate_index_rule():
     logging.info('generating index rule')
@@ -81,20 +73,9 @@ def generate_index_rule():
     yara.compile(filepath='index', includes=True).save('compiled_index')
     logging.info('index rule compiled')
 
-def init_rules():
-    logging.info('initing rules')
-    # TODO: rules source from github url (?)
-    rules = []
-    #rules = requests.get(STORE_API_URL + "/api/rules?page=0&size=1000&eagerload=false",
-    #                    auth=(STORE_API_USERNAME, STORE_API_PASSWORD)).json()
-    for rule in rules:
-        save_rule_file(rule['name'], rule['raw'])
-    generate_index_rule()
-    logging.info('rules initialized')
-
 def save_rule_file(name, content):
     with open(name + YARA_EXTENSION, 'w') as rule_file:
         rule_file.write(content)
 
 if __name__ == '__main__':
-    app.run(threaded=False, port=PORT)
+    app.run(threaded=True, port=PORT)
