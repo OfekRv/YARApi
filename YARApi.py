@@ -6,7 +6,7 @@ import yara
 import time
 import threading
 import logging
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 
 app = Flask(__name__)
 
@@ -21,23 +21,23 @@ def scan_request():
     #TODO: verify request
     request_uid = uuid.uuid1().hex
     scan_requests.update({request_uid: {'status': 'Pending'}})
-    #asyncio.ensure_future(todo(request_uid))
     threading.Thread(target=todo, args=([request_uid])).start()
     return {'location': '/requests/' + request_uid + '/status'}, 202
 
 @app.route('/requests/<request_id>/status', methods=['GET'])
 def request_status(request_id):
-    #TODO check if exist
+    if request_id not in scan_requests:
+        return "Request not found", 404
     resource = scan_requests[request_id]
     status_code = 302 if resource['status'] == 'Completed' else 200
     return resource, status_code
 
 @app.route('/results/<result_id>', methods=['GET'])
 def scan_result(result_id):
-    #TODO check if exist
+    if result_id not in scan_results:
+        return "Result not found", 404
     resource = scan_results[result_id];
-    status_code = 200 if resource else 404
-    return resource, status_code
+    return resource, 200
 
 def todo(request_id):
     time.sleep(5)
