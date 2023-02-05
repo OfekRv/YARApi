@@ -1,16 +1,19 @@
 import os
 import uuid
+from wsgiref.util import request_uri
 import yara
 import threading
-from pathlib import Path
 import zipfile
+import shutil
 from flask import Flask, request
 
 app = Flask(__name__)
 
 PORT = os.environ.get('PORT', 5000)
-BASE_FOLDER = "YARA-rules"
+BASE_FOLDER = "Uploads"
+RULES_FOLDER = "YARA-rules"
 YARA_INDEX_FILE = "index.yar"
+SAMPLE_FILE = "sample.dnr"
 
 scan_requests = {}
 scan_results = {}
@@ -29,13 +32,17 @@ def scan_request():
         return "You must archive the rules set", 400
 
     request_uid = uuid.uuid1().hex
-    rules_path = os.path.join(BASE_FOLDER, request_uid)    
+    rules_path = os.path.join(BASE_FOLDER, request_uid, RULES_FOLDER)    
     os.makedirs(rules_path)
 
     with zipfile.ZipFile(rules_archive, "r") as zip_ref:
         zip_ref.extractall(rules_path)
+    
+    sample_path = os.path.join(BASE_FOLDER, request_uid, SAMPLE_FILE)
+    sample.save(sample_path)
+
     scan_requests.update({request_uid: {'status': 'Pending'}})
-    threading.Thread(target=scan, args=(request_uid, sample, rules_path)).start()
+    threading.Thread(target=scan, args=(request_uid, sample_path, rules_path)).start()
     return {'location': '/requests/' + request_uid + '/status'}, 202
 
 @app.route('/requests/<request_id>/status', methods=['GET'])
@@ -53,11 +60,11 @@ def scan_result(result_id):
     resource = scan_results[result_id];
     return resource, 200
 
-def scan(request_id, sample, rules_path):
+def scan(request_id, sample_path, rules_path):
     index_file = search_file(rules_path, YARA_INDEX_FILE)
-    rules = yara.compile(index_file, includes=True)
-    matches = rules.match(sample)
-    os.rmdir(rules_path)
+    rules = yara.compile(index_file, rules_path)
+    matches = rules.match(sample_path)
+    shutil.rmtree(os.path.join(BASE_FOLDER, request_id))
     submit_result(request_id, matches)
 
 def submit_result(request_id, result):
