@@ -1,6 +1,5 @@
 import os
 import uuid
-from wsgiref.util import request_uri
 import yara
 import threading
 import zipfile
@@ -10,10 +9,13 @@ from flask import Flask, request
 app = Flask(__name__)
 
 PORT = os.environ.get('PORT', 5000)
-BASE_FOLDER = "Uploads"
-RULES_FOLDER = "YARA-rules"
-YARA_INDEX_FILE = "index.yar"
-SAMPLE_FILE = "sample.dnr"
+BASE_FOLDER = os.environ.get('BASE_FOLDER', 'Uploads')
+RULES_FOLDER = os.environ.get('RULES_FOLDER', 'YARA-rules')
+YARA_INDEX_FILE = os.environ.get('YARA_INDEX_FILE', 'index.yar')
+SAMPLE_FILE = os.environ.get('SAMPLE_FILE', 'sample.dnr')
+YARA_MAX_STRING_PER_RULE = os.environ.get('YARA_MAX_STRING_PER_RULE', 5000)
+
+yara.set_config(max_strings_per_rule=YARA_MAX_STRING_PER_RULE)
 
 scan_requests = {}
 scan_results = {}
@@ -62,10 +64,13 @@ def scan_result(result_id):
 
 def scan(request_id, sample_path, rules_path):
     index_file = search_file(rules_path, YARA_INDEX_FILE)
-    rules = yara.compile(index_file, rules_path)
+    rules = yara.compile(index_file, includes=True)
     matches = rules.match(sample_path)
     shutil.rmtree(os.path.join(BASE_FOLDER, request_id))
-    submit_result(request_id, matches)
+    rules_matched = []
+    for match in matches:
+        rules_matched.append(match.rule)    
+    submit_result(request_id, { 'matches': rules_matched })
 
 def submit_result(request_id, result):
     scan_request = scan_requests[request_id]
