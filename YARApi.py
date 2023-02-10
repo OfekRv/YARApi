@@ -1,98 +1,91 @@
 import os
-import json
-import time
+import uuid
 import yara
-import requests
-import logging
-from flask import Flask, request, jsonify
+import threading
+import zipfile
+import shutil
+from flask import Flask, request
+
 app = Flask(__name__)
 
-PORT =  os.environ.get('PORT', 5000)
-STORE_API_URL = os.environ.get('STORE_API_URL', '**')
-STORE_API_USERNAME = os.environ.get('STORE_API_USERNAME', '**')
-STORE_API_PASSWORD = os.environ.get('STORE_API_PASSWORD', '**')
-STORE_API_YARA_ENGINE_NAME = os.environ.get('STORE_API_YARA_ENGINE_NAME', 'YARA')
-STORE_API_RETRY_INTERVAL = os.environ.get('STORE_API_RETRY_INTERVAL', 60)
+PORT = os.environ.get('PORT', 5000)
+BASE_FOLDER = os.environ.get('BASE_FOLDER', 'Uploads')
+RULES_FOLDER = os.environ.get('RULES_FOLDER', 'YARA-rules')
+YARA_INDEX_FILE = os.environ.get('YARA_INDEX_FILE', 'index.yar')
+SAMPLE_FILE = os.environ.get('SAMPLE_FILE', 'sample.dnr')
+YARA_MAX_STRING_PER_RULE = os.environ.get('YARA_MAX_STRING_PER_RULE', 5000)
 
-YARA_EXTENSION = ".yar"
+yara.set_config(max_strings_per_rule=YARA_MAX_STRING_PER_RULE)
 
-#TODO: fix path-traversal
+scan_requests = {}
+scan_results = {}
 
 @app.route('/scan', methods=['POST'])
-def get_matches():
-    if not os.path.exists('compiled_index'):
-        init_rules()
+def scan_request():
+    sample = request.files['sample']
+    rules_archive = request.files['rules']
 
-    rules = yara.load('compiled_index')
-    text = request.json['content']
+    if sample.filename == '':
+        return "Sample is missing", 400
 
-    sample_file_name = str(time.time_ns())
-    with open(sample_file_name, 'w') as sample:
-        sample.write(text)
+    if rules_archive.filename == '':
+        return "Rules are missing", 400
+    if not zipfile.is_zipfile(rules_archive):
+        return "You must archive the rules set", 400
+
+    request_uid = uuid.uuid1().hex
+    rules_path = os.path.join(BASE_FOLDER, request_uid, RULES_FOLDER)    
+    os.makedirs(rules_path)
+
+    with zipfile.ZipFile(rules_archive, "r") as zip_ref:
+        zip_ref.extractall(rules_path)
     
-    matches = rules.match(sample_file_name)
-    os.remove(sample_file_name)
-    print(matches)
+    sample_path = os.path.join(BASE_FOLDER, request_uid, SAMPLE_FILE)
+    sample.save(sample_path)
+
+    scan_requests.update({request_uid: {'status': 'Pending'}})
+    threading.Thread(target=scan, args=(request_uid, sample_path, rules_path)).start()
+    return {'location': '/requests/' + request_uid + '/status'}, 202
+
+@app.route('/requests/<request_id>/status', methods=['GET'])
+def request_status(request_id):
+    if request_id not in scan_requests:
+        return "Request not found", 404
+    resource = scan_requests[request_id]
+    status_code = 302 if resource['status'] == 'Completed' else 200
+    return resource, status_code
+
+@app.route('/results/<result_id>', methods=['GET'])
+def scan_result(result_id):
+    if result_id not in scan_results:
+        return "Result not found", 404
+    resource = scan_results[result_id];
+    return resource, 200
+
+def scan(request_id, sample_path, rules_path):
+    index_file = search_file(rules_path, YARA_INDEX_FILE)
+    rules = yara.compile(index_file, includes=True)
+    matches = rules.match(sample_path)
+    shutil.rmtree(os.path.join(BASE_FOLDER, request_id))
     rules_matched = []
     for match in matches:
-        rules_matched.append(match.rule)
-    return {'matches': rules_matched}
+        rules_matched.append(match.rule)    
+    submit_result(request_id, { 'matches': rules_matched })
 
-@app.route('/rules/<name>', methods=['GET'])
-def get_rule(name):
-    with open(name + '.yar', 'r') as rule_file:
-        return rule_file.read()
+def submit_result(request_id, result):
+    scan_request = scan_requests[request_id]
+    result_uid = uuid.uuid1().hex
+    scan_results.update({result_uid: result})
+    scan_request['status'] = 'Completed'
+    scan_request['result'] = '/results/' + result_uid
+    scan_requests.update({request_id: scan_request})
 
-@app.route('/rules/<name>', methods=['POST'])
-def save_rule(name):
-    rule = request.json['content']
-    save_rule_file(name, rule)
-    generate_index_rule()
-    return name
-
-@app.route('/rules/<name>', methods=['DELETE'])
-def delete_rule(name):
-    os.remove(name + YARA_EXTENSION)
-    generate_index_rule()
-    return name
-
-def generate_index_rule():
-    logging.info('generating index rule')
-    if os.path.exists('index'):
-        os.remove('index')   
-    
-    with open('index', 'w') as rules:
-        for rule_file in os.scandir(os.curdir):
-            if rule_file.path.endswith(YARA_EXTENSION):
-                rules.write('include \"' + rule_file.name + '\"\n')
-
-    yara.compile(filepath='index', includes=True).save('compiled_index')
-    logging.info('index rule compiled')
-
-def init_rules():
-    logging.info('initing rules')
-    rules = requests.get(STORE_API_URL + "/api/rules?page=0&size=1000&eagerload=false",
-                        auth=(STORE_API_USERNAME, STORE_API_PASSWORD)).json()
-    for rule in rules:
-        if rule['engine']['name'] == STORE_API_YARA_ENGINE_NAME: 
-            save_rule_file(rule['name'], rule['raw'])
-    generate_index_rule()
-    logging.info('rules initialized')
-
-def save_rule_file(name, content):
-    with open(name + YARA_EXTENSION, 'w') as rule_file:
-        rule_file.write(content)
+def search_file(root, file_name):
+    for dirpath, dirnames, filenames in os.walk(root):
+        for name in filenames:
+            if name == file_name:
+                return os.path.join(dirpath, name)
+    return None
 
 if __name__ == '__main__':
-    inited = False
-    while not inited:
-        try:
-            init_rules()
-            inited = True
-        except:
-            logging.warning('Could not init rules') 
-            time.sleep(STORE_API_RETRY_INTERVAL)
-            logging.warning('Trying init rules again') 
-
-    # TODO - no hardcoded port
-    app.run(threaded=False, port=PORT)
+    app.run(threaded=True, port=PORT)

@@ -1,6 +1,7 @@
+/yara-rules
 /.vs
 /venv
+/env
+/penv
+/Uploads
 /.vs/YARApi/v16/.suo
-*.yar
-index
-compiled_index
