@@ -91,10 +91,8 @@ async def generate_request_files(request_id, sample, rules_archive, save_method)
     os.makedirs(rules_path)
 
     rules_archive_path = os.path.join(request_folder, rules_archive.filename)
-    #await rules_archive.save(rules_archive_path)
     await save_method(rules_archive, rules_archive_path)
     sample_path = os.path.join(request_folder,SAMPLE_FILE)
-    #await sample.save(sample_path)
     await save_method(sample, sample_path)
     
     if not zipfile.is_zipfile(rules_archive_path):
