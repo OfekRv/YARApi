@@ -9,6 +9,7 @@ from flask import Flask, request
 app = Flask(__name__)
 
 PORT = os.environ.get('PORT', 5000)
+IS_DEBUG = os.environ.get('IS_DEBUG', False)
 BASE_FOLDER = os.environ.get('BASE_FOLDER', 'Uploads')
 RULES_FOLDER = os.environ.get('RULES_FOLDER', 'YARA-rules')
 YARA_INDEX_FILE = os.environ.get('YARA_INDEX_FILE', 'index.yar')
@@ -88,4 +89,4 @@ def search_file(root, file_name):
     return None
 
 if __name__ == '__main__':
-    app.run(threaded=True, port=PORT)
+    app.run(threaded=True,debug=IS_DEBUG, port=PORT)
