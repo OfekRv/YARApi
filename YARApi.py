@@ -156,5 +156,5 @@ async def save_file(file, path):
     file.save(path)
 
 if __name__ == '__main__':
-    #chatbot_client.run(CHATBOT_TOKEN)
-    app.run(threaded=True, port=PORT)
+    chatbot_client.run(CHATBOT_TOKEN)
+    #app.run(threaded=True, port=PORT)
