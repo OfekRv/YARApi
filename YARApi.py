@@ -4,6 +4,7 @@ import yara
 import threading
 import zipfile
 import shutil
+import logging
 from flask import Flask, request
 
 app = Flask(__name__)
@@ -64,14 +65,20 @@ def scan_result(result_id):
     return resource, 200
 
 def scan(request_id, sample_path, rules_path):
+    logging.info('start scanning request ' + request_id)
     index_file = search_file(rules_path, YARA_INDEX_FILE)
+    logging.info('found index file of request ' + request_id)
     rules = yara.compile(index_file, includes=True)
+    logging.info('rules request ' + request_id + 'compiled successfully')
     matches = rules.match(sample_path)
+    logging.info('scan of request ' + request_id + 'finished')
     shutil.rmtree(os.path.join(BASE_FOLDER, request_id))
+    logging.info('files request ' + request_id + 'deleted successfully')
     rules_matched = []
     for match in matches:
         rules_matched.append(match.rule)    
     submit_result(request_id, { 'matches': rules_matched })
+    logging.info('submmited result of request: ' + request_id)
 
 def submit_result(request_id, result):
     scan_request = scan_requests[request_id]
