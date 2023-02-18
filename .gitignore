@@ -1,7 +1,5 @@
-/yara-rules
 /.vs
-/venv
-/env
 /penv
+/env
 /Uploads
-/.vs/YARApi/v16/.suo
+/__pycache__
