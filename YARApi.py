@@ -18,6 +18,7 @@ chatbot_client = discord.Client(intents=intents)
 bot = commands.Bot(intents=intents, command_prefix='/')
 chatbot_command_tree = app_commands.CommandTree(chatbot_client)
 
+MODE = os.environ.get('MODE', 'Chat')
 PORT = os.environ.get('PORT', 5000)
 IS_DEBUG = os.environ.get('IS_DEBUG', False)
 BASE_FOLDER = os.environ.get('BASE_FOLDER', 'Uploads')
@@ -164,5 +165,7 @@ async def save_file(file, path):
     file.save(path)
 
 if __name__ == '__main__':
-    chatbot_client.run(CHATBOT_TOKEN)
-    #app.run(threaded=True,debug=IS_DEBUG, port=PORT)
+    if MODE == 'Chat':
+        chatbot_client.run(CHATBOT_TOKEN)
+    elif MODE == 'Api':
+        app.run(threaded=True,debug=IS_DEBUG, port=PORT)
