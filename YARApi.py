@@ -9,6 +9,7 @@ import pprint
 import threading
 import zipfile
 import shutil
+import logging
 import discord
 
 app = Flask(__name__)
@@ -18,6 +19,7 @@ bot = commands.Bot(intents=intents, command_prefix='/')
 chatbot_command_tree = app_commands.CommandTree(chatbot_client)
 
 PORT = os.environ.get('PORT', 5000)
+IS_DEBUG = os.environ.get('IS_DEBUG', False)
 BASE_FOLDER = os.environ.get('BASE_FOLDER', 'Uploads')
 RULES_FOLDER = os.environ.get('RULES_FOLDER', 'YARA-rules')
 YARA_INDEX_FILE = os.environ.get('YARA_INDEX_FILE', 'index.yar')
@@ -115,10 +117,15 @@ async def submit_request(sample, rules_archive, save_method):
     return request_id, sample_path, rules_path
 
 def scan(request_id, sample_path, rules_path):
+    logging.info('start scanning request ' + request_id)
     index_file = search_file(rules_path, YARA_INDEX_FILE)
+    logging.info('found index file of request ' + request_id)
     rules = yara.compile(index_file, includes=True)
+    logging.info('rules request ' + request_id + 'compiled successfully')
     matches = rules.match(sample_path)
+    logging.info('scan of request ' + request_id + 'finished')
     shutil.rmtree(os.path.join(BASE_FOLDER, request_id))
+    logging.info('files request ' + request_id + 'deleted successfully')
     rules_matched = []
     for match in matches:
         matched_strings = []
@@ -130,6 +137,7 @@ def scan(request_id, sample_path, rules_path):
                               'strings': matched_strings})
     result = {'matches': rules_matched}
     submit_result(request_id, result)
+    logging.info('submmited result of request: ' + request_id)
     return result
 
 def submit_result(request_id, result):
@@ -157,4 +165,4 @@ async def save_file(file, path):
 
 if __name__ == '__main__':
     chatbot_client.run(CHATBOT_TOKEN)
-    #app.run(threaded=True, port=PORT)
+    #app.run(threaded=True,debug=IS_DEBUG, port=PORT)
