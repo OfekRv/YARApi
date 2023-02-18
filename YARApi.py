@@ -1,16 +1,19 @@
-from YARApiError import YARApiError, YARApiFileNotFoundError, YARApiRulesFileTypeError
+import logging
+import os
+import pprint
+import shutil
+import threading
+import uuid
+import zipfile
+
+import discord
+import yara
 from discord import app_commands
 from discord.ext import commands
 from flask import Flask, request
-import os
-import uuid
-import yara
-import pprint
-import threading
-import zipfile
-import shutil
-import logging
-import discord
+
+from YARApiError import (YARApiError, YARApiFileNotFoundError,
+                         YARApiRulesFileTypeError)
 
 app = Flask(__name__)
 intents = discord.Intents.default()
@@ -18,7 +21,8 @@ chatbot_client = discord.Client(intents=intents)
 bot = commands.Bot(intents=intents, command_prefix='/')
 chatbot_command_tree = app_commands.CommandTree(chatbot_client)
 
-MODE = os.environ.get('MODE', 'Chat')
+MODE = os.environ.get('MODE', 'Api')
+HOST = os.environ.get('HOST', '0.0.0.0')
 PORT = os.environ.get('PORT', 5000)
 IS_DEBUG = os.environ.get('IS_DEBUG', False)
 BASE_FOLDER = os.environ.get('BASE_FOLDER', 'Uploads')
@@ -168,4 +172,4 @@ if __name__ == '__main__':
     if MODE == 'Chat':
         chatbot_client.run(CHATBOT_TOKEN)
     elif MODE == 'Api':
-        app.run(threaded=True,debug=IS_DEBUG, port=PORT)
+        app.run(host=HOST, port=PORT, threaded=True,debug=IS_DEBUG)

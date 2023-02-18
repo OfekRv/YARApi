@@ -1,5 +1,4 @@
 /.vs
-/penv
-/env
+/.venv
 /Uploads
 /__pycache__
