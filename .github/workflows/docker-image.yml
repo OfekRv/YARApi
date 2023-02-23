@@ -42,10 +42,14 @@ jobs:
       name: 'Set up Cloud SDK'
       uses: 'google-github-actions/setup-gcloud@v1'
     - 
+      name: 'Deploy with gcloud CLI'
+      run: 'gcloud run deploy ${{secrets.GCP_REPO_NAME}} --image=${{secrets.DOCKER_REPO}}:latest --project=${{secrets.GCP_PROJECT}} --region=${{secrets.GCP_REGION}} --platform=managed'
+    - 
       id: deploy
       uses: google-github-actions/deploy-cloudrun@v1
       with:
         image: ${{secrets.DOCKER_REPO}}:latest
+        project: ${{secrets.GCP_PROJECT}}
         service: ${{secrets.GCP_REPO_NAME}}
         credentials: ${{secrets.GCP_CREDENTIALS}}
         region: ${{secrets.GCP_REGION}}
