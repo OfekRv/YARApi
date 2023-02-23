@@ -43,4 +43,4 @@ jobs:
       uses: 'google-github-actions/setup-gcloud@v1'
     - 
       name: 'Deploy with gcloud CLI'
-      run: 'gcloud run deploy yarapi --image=${{secrets.DOCKER_REPO}}:latest --project=${{GCP_PROJECT}} --region=${{GCP_REGION}} --platform=managed --remote-only'
+      run: 'gcloud run deploy ${{github.repository}} --image=${{secrets.DOCKER_REPO}}:latest --project=${{secret.GCP_PROJECT}} --region=${{secret.GCP_REGION}} --platform=managed --remote-only'
