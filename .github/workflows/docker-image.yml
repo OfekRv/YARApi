@@ -31,9 +31,16 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    
     steps:
-      - uses: actions/checkout@v3
-      - uses: superfly/flyctl-actions/setup-flyctl@master
-      - run: flyctl launch -i ${{secrets.DOCKER_REPO}}:latest --name ${{secrets.FLY_APP_NAME}} --region ${{secrets.FLY_APP_REGION}} --remote-only
-        env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+    -
+      id: 'auth'
+      uses: 'google-github-actions/auth@v1'
+      with:
+        credentials_json: '${{secrets.GCP_CREDENTIALS}}'
+    - 
+      name: 'Set up Cloud SDK'
+      uses: 'google-github-actions/setup-gcloud@v1'
+    - 
+      name: 'Deploy with gcloud CLI'
+      run: 'gcloud run deploy yarapi --image=${{secrets.DOCKER_REPO}}:latest --project=${{GCP_PROJECT}} --region=${{GCP_REGION}} --platform=managed --remote-only'
