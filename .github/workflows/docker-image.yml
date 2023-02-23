@@ -44,3 +44,16 @@ jobs:
     - 
       name: 'Deploy with gcloud CLI'
       run: 'gcloud run deploy ${{secrets.GCP_REPO_NAME}} --image=${{secrets.DOCKER_REPO}}:latest --project=${{secrets.GCP_PROJECT}} --region=${{secrets.GCP_REGION}} --platform=managed'
+    -
+      id: deploy
+      uses: google-github-actions/deploy-cloudrun@v1
+      with:
+        image: ${{secrets.DOCKER_REPO}}:latest
+        service: ${{secrets.GCP_REPO_NAME}}
+        credentials: ${{secrets.GCP_CREDENTIALS}}
+        region: ${{secrets.GCP_REGION}}
+        env_vars: |
+          CHATBOT_TOKEN=${{secrets.CHATBOT_TOKEN}}
+          CHATBOT_DISCORD_GUILD=${{secrets.CHATBOT_DISCORD_GUILD}}
+          SCAN_CHANNEL=${{secrets.SCAN_CHANNEL}}
+          MODE=${{env.MODE}}
