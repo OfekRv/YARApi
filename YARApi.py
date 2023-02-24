@@ -30,10 +30,10 @@ RULES_FOLDER = os.environ.get('RULES_FOLDER', default='YARA-rules')
 YARA_INDEX_FILE = os.environ.get('YARA_INDEX_FILE', default='index.yar')
 SAMPLE_FILE = os.environ.get('SAMPLE_FILE', default='sample.dnr')
 YARA_MAX_STRING_PER_RULE = os.environ.get('YARA_MAX_STRING_PER_RULE', default=5000000)
-CHATBOT_TOKEN = os.getenv('CHATBOT_TOKEN', default='')
+CHATBOT_TOKEN = os.getenv('CHATBOT_TOKEN', default='MTA3MzQ5MTczODExMjU2NTI3MA.GGlXKW.Gqwh13J2YVLXDxW_re0oaXUFEtGlXVwv_kgitk')
 CHATBOT_COMMAND_PREFIX = os.getenv('CHATBOT_COMMAND_PREFIX ', default='/')
-GUILD = os.getenv('CHATBOT_DISCORD_GUILD', default='0')
-SCAN_CHANNEL = int(os.getenv('SCAN_CHANNEL', default='0'))
+GUILD = os.getenv('CHATBOT_DISCORD_GUILD', default='1073492750428807199')
+SCAN_CHANNEL = int(os.getenv('SCAN_CHANNEL', default='1073526354924011580'))
 
 yara.set_config(max_strings_per_rule=YARA_MAX_STRING_PER_RULE)
 
@@ -55,6 +55,8 @@ async def scan_request(interaction, sample: discord.Attachment, rules_archive: d
         result = await generate_scan_request_result(sample, rules_archive, save_attachment)
     except YARApiError as e:
         await interaction.response.send_message(str(e))
+    except:
+        await interaction.response.send_message('Unexpected error occured :(')
     else:
         await interaction.response.send_message(format_chat_output(result))
 
