@@ -9,12 +9,13 @@ import zipfile
 
 import discord
 import yara
+from yara import SyntaxError
 from discord import app_commands
 from discord.ext import commands
 from flask import Flask, request
 
 from YARApiError import (YARApiError, YARApiFileNotFoundError,
-                         YARApiRulesFileTypeError)
+                         YARApiRulesFileTypeError, YARApiRulesFileSyntaxError)
 
 app = Flask(__name__)
 intents = discord.Intents.default()
@@ -55,8 +56,9 @@ async def scan_request(interaction, sample: discord.Attachment, rules_archive: d
     try:
         result = await generate_scan_request_result(sample, rules_archive, save_attachment)
     except YARApiError as e:
-        await interaction.followup.send(str(e))
-    except:
+        await interaction.followup.send('ERROR: ' + str(e))
+    except Exception as e:
+        logging.exception(str(e))
         await interaction.followup.send('Unexpected error occured :(')
     else:
         await interaction.followup.send(format_chat_output(result))
@@ -128,7 +130,10 @@ def scan(request_id, sample_path, rules_path):
     logging.info('start scanning request ' + request_id)
     index_file = search_file(rules_path, YARA_INDEX_FILE)
     logging.info('found index file of request ' + request_id)
-    rules = yara.compile(index_file, includes=True)
+    try:
+        rules = yara.compile(index_file, includes=True)
+    except SyntaxError as e:
+        raise YARApiRulesFileSyntaxError(e)
     logging.info('rules request ' + request_id + 'compiled successfully')
     matches = rules.match(sample_path)
     logging.info('scan of request ' + request_id + 'finished')

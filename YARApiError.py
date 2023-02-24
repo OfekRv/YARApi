@@ -8,6 +8,9 @@ class YARApiFileNotFoundError(YARApiError):
 class YARApiRulesFileTypeError(YARApiError):
     pass
 
+class YARApiRulesFileSyntaxError(YARApiError):
+    pass
+
 
 
 
