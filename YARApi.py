@@ -33,7 +33,7 @@ YARA_MAX_STRING_PER_RULE = os.environ.get('YARA_MAX_STRING_PER_RULE', default=50
 CHATBOT_TOKEN = os.getenv('CHATBOT_TOKEN', default='')
 CHATBOT_COMMAND_PREFIX = os.getenv('CHATBOT_COMMAND_PREFIX ', default='/')
 GUILD = os.getenv('CHATBOT_DISCORD_GUILD', default='0')
-SCAN_CHANNEL = int(os.getenv('SCAN_CHANNEL ', default='0'))
+SCAN_CHANNEL = int(os.getenv('SCAN_CHANNEL', default='0'))
 
 yara.set_config(max_strings_per_rule=YARA_MAX_STRING_PER_RULE)
 
