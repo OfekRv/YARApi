@@ -51,6 +51,7 @@ async def scan_request(interaction, sample: discord.Attachment, rules_archive: d
     if interaction.channel_id != SCAN_CHANNEL:
         await interaction.response.send_message("wrong channel, please switch to scanner channel :)")
         return    
+    interaction.response.defer()
     try:
         result = await generate_scan_request_result(sample, rules_archive, save_attachment)
     except YARApiError as e:
