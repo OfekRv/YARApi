@@ -23,7 +23,7 @@ chatbot_command_tree = app_commands.CommandTree(chatbot_client)
 
 MODE = os.environ.get('MODE', 'Api')
 HOST = os.environ.get('HOST', '0.0.0.0')
-PORT = os.environ.get('PORT', 5000)
+PORT = os.environ.get('PORT', 8080)
 IS_DEBUG = os.environ.get('IS_DEBUG', False)
 BASE_FOLDER = os.environ.get('BASE_FOLDER', 'Uploads')
 RULES_FOLDER = os.environ.get('RULES_FOLDER', 'YARA-rules')
