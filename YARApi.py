@@ -3,6 +3,7 @@ import os
 import pprint
 import shutil
 import threading
+from threading import Thread
 import uuid
 import zipfile
 
@@ -30,10 +31,10 @@ RULES_FOLDER = os.environ.get('RULES_FOLDER', 'YARA-rules')
 YARA_INDEX_FILE = os.environ.get('YARA_INDEX_FILE', 'index.yar')
 SAMPLE_FILE = os.environ.get('SAMPLE_FILE', 'sample.dnr')
 YARA_MAX_STRING_PER_RULE = os.environ.get('YARA_MAX_STRING_PER_RULE', 5000000)
-CHATBOT_TOKEN = os.getenv('CHATBOT_TOKEN', '0')
+CHATBOT_TOKEN = os.getenv('CHATBOT_TOKEN', '')
 CHATBOT_COMMAND_PREFIX = os.getenv('CHATBOT_COMMAND_PREFIX ', '/')
-GUILD = os.getenv('CHATBOT_DISCORD_GUILD', '0')
-SCAN_CHANNEL = os.getenv('SCAN_CHANNEL ', 0)
+GUILD = os.getenv('CHATBOT_DISCORD_GUILD', '')
+SCAN_CHANNEL = int(os.getenv('SCAN_CHANNEL ', ''))
 
 yara.set_config(max_strings_per_rule=YARA_MAX_STRING_PER_RULE)
 
@@ -169,7 +170,5 @@ async def save_file(file, path):
     file.save(path)
 
 if __name__ == '__main__':
-    if MODE == 'Chat':
-        chatbot_client.run(CHATBOT_TOKEN)
-    elif MODE == 'Api':
-        app.run(host=HOST, port=PORT, threaded=True,debug=IS_DEBUG)
+    Thread(target=chatbot_client.run, args=([CHATBOT_TOKEN])).start()
+    app.run(host=HOST, port=PORT, threaded=True,debug=IS_DEBUG)
