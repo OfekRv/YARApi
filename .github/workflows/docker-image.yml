@@ -43,4 +43,4 @@ jobs:
       uses: 'google-github-actions/setup-gcloud@v1'
     - 
       name: 'Deploy with gcloud'
-      run: 'gcloud run deploy ${{secrets.GCP_REPO_NAME}} --image=${{secrets.DOCKER_REPO}}:latest --region=${{secrets.GCP_REGION}} --platform=managed --port=${{secrets.PORT}} --set-env-vars="CHATBOT_TOKEN=${{secrets.CHATBOT_TOKEN}}, CHATBOT_DISCORD_GUILD=${{secrets.CHATBOT_DISCORD_GUILD}}, SCAN_CHANNEL=${{secrets.SCAN_CHANNEL}}, MODE=${{secrets.MODE}}"'
+      run: 'gcloud run deploy ${{secrets.GCP_REPO_NAME}} --image=${{secrets.DOCKER_REPO}}:latest --region=${{secrets.GCP_REGION}} --platform=managed --port=${{secrets.PORT}} --set-env-vars="CHATBOT_TOKEN=${{secrets.CHATBOT_TOKEN}}, CHATBOT_DISCORD_GUILD=${{secrets.CHATBOT_DISCORD_GUILD}}, SCAN_CHANNEL=${{secrets.SCAN_CHANNEL}}, MODE=${{secrets.MODE}}" --allow-unauthenticated'
