@@ -55,11 +55,11 @@ async def scan_request(interaction, sample: discord.Attachment, rules_archive: d
     try:
         result = await generate_scan_request_result(sample, rules_archive, save_attachment)
     except YARApiError as e:
-        await interaction.response.send_message(str(e))
+        await interaction.followup.send(str(e))
     except:
-        await interaction.response.send_message('Unexpected error occured :(')
+        await interaction.followup.send('Unexpected error occured :(')
     else:
-        await interaction.response.send_message(format_chat_output(result))
+        await interaction.followup.send(format_chat_output(result))
 
 @app.route('/scan', methods=['POST'])
 async def scan_request():
