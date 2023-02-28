@@ -31,10 +31,10 @@ RULES_FOLDER = os.environ.get('RULES_FOLDER', default='YARA-rules')
 YARA_INDEX_FILE = os.environ.get('YARA_INDEX_FILE', default='index.yar')
 SAMPLE_FILE = os.environ.get('SAMPLE_FILE', default='sample.dnr')
 YARA_MAX_STRING_PER_RULE = os.environ.get('YARA_MAX_STRING_PER_RULE', default=5000000)
-CHATBOT_TOKEN = os.getenv('CHATBOT_TOKEN', default='')
+CHATBOT_TOKEN = os.getenv('CHATBOT_TOKEN', default='MTA3MzQ5MTczODExMjU2NTI3MA.GqN4kE.0MviZ-Sg9CFmEVTaDUbjhp-n20NzUImIak5jYo')
 CHATBOT_COMMAND_PREFIX = os.getenv('CHATBOT_COMMAND_PREFIX ', default='/')
-GUILD = os.getenv('CHATBOT_DISCORD_GUILD', default='0')
-SCAN_CHANNEL = int(os.getenv('SCAN_CHANNEL', default='0'))
+GUILD = os.getenv('CHATBOT_DISCORD_GUILD', default='1073492750428807199')
+SCAN_CHANNEL = int(os.getenv('SCAN_CHANNEL', default='1078635776058859613'))
 
 yara.set_config(max_strings_per_rule=YARA_MAX_STRING_PER_RULE)
 
@@ -51,17 +51,17 @@ async def on_ready():
 async def scan_request(interaction, sample: discord.Attachment, rules_archive: discord.Attachment):
     await interaction.response.defer()
     if interaction.channel_id != SCAN_CHANNEL:
-        await interaction.response.send_message("wrong channel, please switch to scanner channel :)")
-        return    
-    try:
-        result = await generate_scan_request_result(sample, rules_archive, save_attachment)
-    except YARApiError as e:
-        await interaction.followup.send('ERROR: ' + str(e))
-    except Exception as e:
-        logging.exception(str(e))
-        await interaction.followup.send('Unexpected error occured :(')
+        await interaction.followup.send("wrong channel, please switch to scanner channel :)")
     else:
-        await interaction.followup.send(format_chat_output(result))
+        try:
+            result = await generate_scan_request_result(sample, rules_archive, save_attachment)
+        except YARApiError as e:
+            await interaction.followup.send('ERROR: ' + str(e))
+        except Exception as e:
+            logging.exception(str(e))
+            await interaction.followup.send('Unexpected error occured :(')
+        else:
+            await interaction.followup.send(format_chat_output(result))
 
 @app.route('/scan', methods=['POST'])
 async def scan_request():
@@ -84,7 +84,7 @@ def request_status(request_id):
 def scan_result(result_id):
     if result_id not in scan_results:
         return "Result not found", 404
-    resource = scan_results[result_id];
+    resource = scan_results[result_id]
     return resource, 200
 
 async def generate_scan_request_result(sample, rules_archive, save_method):
