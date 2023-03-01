@@ -1,4 +1,4 @@
 /.vs
 /.venv
 /Uploads
-/__pycache__
+*__pycache__*
