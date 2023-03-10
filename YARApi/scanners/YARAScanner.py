@@ -1,11 +1,10 @@
-from YARApi.errors.YARApiError import (YARApiError, YARApiFileNotFoundError, 
-                                YARApiRulesFileTypeError, YARApiRulesFileSyntaxError)
 import logging
 import os
 import pprint
 import shutil
 
 import yara
+from errors.YARApiRulesFileSyntaxError import YARApiRulesFileSyntaxError
 from yara import SyntaxError
 
 BASE_FOLDER = os.environ.get('BASE_FOLDER', default='Uploads')
@@ -22,7 +21,7 @@ def scan(request_id, sample_path, rules_path):
     try:
         rules = yara.compile(index_file, includes=True)
     except SyntaxError as e:
-        raise YARApiRulesFileSyntaxError(e)
+        raise YARApiRulesFileSyntaxError(e) from None
     logging.info('rules request ' + request_id + 'compiled successfully')
     matches = rules.match(sample_path)
     logging.info('scan of request ' + request_id + 'finished')

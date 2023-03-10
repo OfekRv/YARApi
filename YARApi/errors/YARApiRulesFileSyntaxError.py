@@ -1,4 +1,4 @@
-from YARApi.errors.YARApiError import YARApiError
+from errors.YARApiError import YARApiError
 
 class YARApiRulesFileSyntaxError(YARApiError):
     pass

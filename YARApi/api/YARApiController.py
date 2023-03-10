@@ -1,12 +1,11 @@
-from YARApi.scanners import YARAScanner
-from YARApi.errors.YARApiError import (YARApiError, YARApiFileNotFoundError,
-                         YARApiRulesFileTypeError)
-
 import os
+import threading
 import uuid
 import zipfile
 
+from errors.YARApiFileNotFoundError import YARApiFileNotFoundError
 from flask import Flask, request
+from scanners import YARAScanner
 
 app = Flask(__name__)
 
@@ -20,7 +19,7 @@ SAMPLE_FILE = os.environ.get('SAMPLE_FILE', default='sample.dnr')
 scan_requests = {}
 scan_results = {}
 
-async def run():
+def run():
     app.run(host=HOST, port=PORT, threaded=True,debug=IS_DEBUG)
 
 @app.route('/scan', methods=['POST'])
@@ -29,7 +28,7 @@ async def scan_request():
     rules_archive = request.files['rules']
     try:
         return await handle_scan_request(sample, rules_archive, save_file)
-    except YARApiError as e:
+    except errors.YARApiError as e:
         return str(e), 400
 
 @app.route('/requests/<request_id>/status', methods=['GET'])
