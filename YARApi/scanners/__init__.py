@@ -1,3 +1,0 @@
-name = 'scanners'
-
-packages = ["errors"]
