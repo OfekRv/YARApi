@@ -45,7 +45,7 @@ async def __handle_request(interaction, sample: discord.Attachment, rule: discor
         await interaction.followup.send("wrong channel, please switch to scanner channel :)")
     else:
         try:
-            result = await scan_manager.generate_scan_request_result(sample, rules_archive, save_attachment)
+            result = await scan_manager.generate_scan_request_result(sample, rules_archive, rule, save_attachment)
         except YARApiError as e:
             await interaction.followup.send('ERROR: ' + str(e))
         except Exception as e:
