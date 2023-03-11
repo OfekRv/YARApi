@@ -27,33 +27,36 @@ def run():
 async def on_ready():
     await chatbot_command_tree.sync(guild=discord.Object(id=GUILD))
     
-@chatbot_command_tree.command(name = "scan",
+@chatbot_command_tree.command(name = "scan_with_ruleset",
                               description = "Scan a file with your own rules set",
                               guild=discord.Object(id=GUILD)) 
 async def scan_request(interaction, sample: discord.Attachment, rules_archive: discord.Attachment):
+  await __handle_request(interaction, sample, None, rules_archive)
+
+@chatbot_command_tree.command(name = "scan_with_single_rule",
+                              description = "Scan a file with your own rule",
+                              guild=discord.Object(id=GUILD)) 
+async def scan_request(interaction, sample: discord.Attachment, rule: discord.Attachment):
+    await __handle_request(interaction, sample, rule, None)
+
+async def __handle_request(interaction, sample: discord.Attachment, rule: discord.Attachment, rules_archive: discord.Attachment):
     await interaction.response.defer()
     if interaction.channel_id != SCAN_CHANNEL:
         await interaction.followup.send("wrong channel, please switch to scanner channel :)")
     else:
         try:
-            result = await generate_scan_request_result(sample, rules_archive, save_attachment)
+            result = await scan_manager.generate_scan_request_result(sample, rules_archive, save_attachment)
         except YARApiError as e:
             await interaction.followup.send('ERROR: ' + str(e))
         except Exception as e:
             logging.exception(str(e))
             await interaction.followup.send('Unexpected error occured :(')
         else:
-            await interaction.followup.send(format_chat_output(result))
+            await interaction.followup.send(__format_chat_output(result))
 
-async def generate_scan_request_result(sample, rules_archive, save_method):
-    request_id, sample_path, rules_path = await scan_manager.submit_request(sample, rules_archive, save_method)
-    result = YARAScanner.scan(request_id, sample_path, rules_path)
-    return result
 
-def format_chat_output(output):
+def __format_chat_output(output):
     return '`' + pprint.pformat(output, 2) + '`'
 
 async def save_attachment(file, path):
     await file.save(path)
-async def save_file(file, path):
-    file.save(path)
