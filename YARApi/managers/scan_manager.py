@@ -59,7 +59,8 @@ async def __generate_request_files(request_id, sample, rules_archive, single_rul
     if (rules_archive is not None and rules_archive.filename != ''):
         rule_path = await __generate_rules_files(rules_archive, save_method, request_folder, rules_path)
     else:
-        rule_path = await save_method(single_rule_file, os.path.join(rules_path, YARA_INDEX_FILE))
+        rule_path = os.path.join(rules_path, YARA_INDEX_FILE)
+        await save_method(single_rule_file, rule_path)
 
     return sample_path, rule_path
 
