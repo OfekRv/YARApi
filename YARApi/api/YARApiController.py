@@ -19,8 +19,8 @@ def run():
 @app.route('/scan', methods=['POST'])
 async def scan_request():
     sample = request.files['sample']
-    rules_archive = request.files['rules']
-    single_rule_file = request.files['rule']
+    rules_archive = request.files['rules'] if "rules" in request.files else None
+    single_rule_file = request.files['rule'] if "rule" in request.files else None
     try:
         return await scan_manager.handle_scan_request(sample, rules_archive, single_rule_file, save_file)
     except YARApiError as e:
