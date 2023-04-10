@@ -31,8 +31,9 @@ def request_status(request_id):
     if request_id not in scan_manager.scan_requests:
         return "Request not found", 404
     resource = scan_manager.scan_requests[request_id]
-    status_code = 302 if resource['status'] == 'Completed' else 200
-    return resource, status_code
+    # TODO: consider use 302 with header redirect
+    #status_code = 302 if resource['status'] == 'Completed' else 200
+    return resource, 200
 
 @app.route('/results/<result_id>', methods=['GET'])
 def scan_result(result_id):
