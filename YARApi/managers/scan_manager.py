@@ -32,10 +32,14 @@ async def generate_scan_request_result(sample, rules_archive, single_rule_file, 
 
 async def handle_scan_request(sample, rules_archive, single_rule_file, save_method):
     request_id, sample_path, rule_path = await submit_request(sample, rules_archive, single_rule_file, save_method)
-    threading.Thread(target=YARAScanner.scan, args=(request_id, sample_path, rule_path)).start()
+    threading.Thread(target=__execute_scan_and_submit_result, args=(request_id, sample_path, rule_path)).start()
     return {'location': '/requests/' + request_id + '/status'}, 202
 
-def submit_result(request_id, result):
+def __execute_scan_and_submit_result(request_id, sample_path, rule_path):
+    result = YARAScanner.scan(request_id, sample_path, rule_path)
+    __submit_result(request_id, result)
+
+def __submit_result(request_id, result):
     scan_request = scan_requests[request_id]
     result_uid = uuid.uuid1().hex
     scan_results.update({result_uid: result})
