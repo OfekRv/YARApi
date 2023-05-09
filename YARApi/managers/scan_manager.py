@@ -82,6 +82,6 @@ async def __generate_rules_files(rules_archive, save_method, request_folder, rul
         zip_ref.extractall(rules_path)
 
     index_rule = search_file(rules_path, YARA_INDEX_FILE)
-    if index_rule == '':
+    if index_rule is None:
         raise YARApiFileNotFoundError('Could not find index rule, must be named "' + YARA_INDEX_FILE + '"')
     return index_rule
