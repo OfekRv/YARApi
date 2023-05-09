@@ -3,6 +3,7 @@ import threading
 import uuid
 import zipfile
 
+from errors.YARApiRulesFileSyntaxError import YARApiRulesFileSyntaxError
 from errors.YARApiFileNotFoundError import YARApiFileNotFoundError
 from errors.YARApiRulesFileTypeError import YARApiRulesFileTypeError
 from scanners import YARAScanner
@@ -36,14 +37,17 @@ async def handle_scan_request(sample, rules_archive, single_rule_file, save_meth
     return {'location': '/requests/' + request_id + '/status'}, 202
 
 def __execute_scan_and_submit_result(request_id, sample_path, rule_path):
-    result = YARAScanner.scan(request_id, sample_path, rule_path)
-    __submit_result(request_id, result)
+    try:
+        result = YARAScanner.scan(request_id, sample_path, rule_path)
+    except YARApiRulesFileSyntaxError as e:
+        __submit_result(request_id, 'Error', e)    
+    __submit_result(request_id, 'Completed', result)
 
-def __submit_result(request_id, result):
+def __submit_result(request_id, status, result):
     scan_request = scan_requests[request_id]
     result_uid = uuid.uuid1().hex
     scan_results.update({result_uid: result})
-    scan_request['status'] = 'Completed'
+    scan_request['status'] = status
     scan_request['result'] = '/results/' + result_uid
     scan_requests.update({request_id: scan_request})
 
