@@ -2,6 +2,8 @@ import os
 import threading
 import uuid
 import zipfile
+import logging
+import shutil
 
 from errors.YARApiRulesFileSyntaxError import YARApiRulesFileSyntaxError
 from errors.YARApiFileNotFoundError import YARApiFileNotFoundError
@@ -29,7 +31,9 @@ async def submit_request(sample, rules_archive, single_rule_file, save_method):
 
 async def generate_scan_request_result(sample, rules_archive, single_rule_file, save_method):
     request_id, sample_path, rule_path = await submit_request(sample, rules_archive, single_rule_file, save_method)
-    return YARAScanner.scan(request_id, sample_path, rule_path)
+    result = YARAScanner.scan(request_id, sample_path, rule_path)
+    __delete_request_files(request_id)
+    return result
 
 async def handle_scan_request(sample, rules_archive, single_rule_file, save_method):
     request_id, sample_path, rule_path = await submit_request(sample, rules_archive, single_rule_file, save_method)
@@ -41,6 +45,8 @@ def __execute_scan_and_submit_result(request_id, sample_path, rule_path):
         result = YARAScanner.scan(request_id, sample_path, rule_path)
     except YARApiRulesFileSyntaxError as e:
         __submit_result(request_id, 'Error', e)    
+    finally:
+        __delete_request_files(request_id)
     __submit_result(request_id, 'Completed', result)
 
 def __submit_result(request_id, status, result):
@@ -85,3 +91,10 @@ async def __generate_rules_files(rules_archive, save_method, request_folder, rul
     if index_rule is None:
         raise YARApiFileNotFoundError('Could not find index rule, must be named "' + YARA_INDEX_FILE + '"')
     return index_rule
+
+def __delete_request_files(request_id):
+    try:
+        shutil.rmtree(os.path.join(BASE_FOLDER, request_id))
+        logging.info('files request ' + request_id + 'deleted successfully')
+    except FileNotFoundError as e:
+        logging.info('no files found for request ' + request_id + ', probably already deleted')

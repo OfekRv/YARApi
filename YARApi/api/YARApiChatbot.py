@@ -8,7 +8,6 @@ from discord import app_commands
 from discord.ext import commands
 from errors.YARApiError import YARApiError
 from managers import scan_manager
-from scanners import YARAScanner
 
 intents = discord.Intents.default()
 chatbot_client = discord.Client(intents=intents)

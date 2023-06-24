@@ -16,6 +16,7 @@ def scan(request_id, sample_path, rule):
     try:
         rules = yara.compile(rule, includes=True)
     except SyntaxError as e:
+        __delete_request_files(request_id)
         raise YARApiRulesFileSyntaxError(e) from None
     logging.info('rules request ' + request_id + 'compiled successfully')
     matches = rules.match(sample_path)
